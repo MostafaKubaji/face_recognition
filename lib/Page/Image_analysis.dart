@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:login/Screens/ShowResults.dart';
 import 'package:tflite/tflite.dart';
+import 'package:login/Screens/ShowResults.dart';
 
 class ImageAnalysis extends StatefulWidget {
   final File image;
@@ -16,8 +16,7 @@ class ImageAnalysis extends StatefulWidget {
 
 class _ImageAnalysisState extends State<ImageAnalysis> {
   String? _result;
-  bool _isLoading = false;  // لتتبع حالة التحميل
-  List<String>? _labels;    // لتخزين التصنيفات
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -25,26 +24,14 @@ class _ImageAnalysisState extends State<ImageAnalysis> {
     loadModel();
   }
 
-  Future<void> loadLabels() async {
-    try {
-      final data = await rootBundle.loadString('assets/loading.json');
-      final jsonResult = json.decode(data) as List;
-      _labels = jsonResult.map((item) => item.toString()).toList();
-      print("Labels loaded: $_labels");
-    } catch (e) {
-      print("Error loading labels: $e");
-    }
-  }
-
   Future<void> loadModel() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      await loadLabels();  // تحميل التصنيفات أولاً
       String? res = await Tflite.loadModel(
         model: "assets/mobilefacenet.tflite",
-        labels: "assets/loading.json",  // استخدام ملف JSON للتصنيفات
+        labels: "assets/kv.txt",  // تأكد من وجود هذا الملف
       );
       print("Model loaded: $res");
     } catch (e) {
@@ -70,7 +57,6 @@ class _ImageAnalysisState extends State<ImageAnalysis> {
         _result = output?.toString() ?? 'No result';
       });
 
-      // الانتقال إلى صفحة ShowResults وعرض النتيجة
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -87,15 +73,6 @@ class _ImageAnalysisState extends State<ImageAnalysis> {
         _isLoading = false;
       });
     }
-  }
-
-  void _navigateToShowResults() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ShowResults(result: 'No analysis yet'),
-      ),
-    );
   }
 
   @override
@@ -119,25 +96,10 @@ class _ImageAnalysisState extends State<ImageAnalysis> {
               if (_isLoading) 
                 CircularProgressIndicator()
               else ...[
-                _result == null 
-                  ? Column(
-                      children: [
-                        ElevatedButton(
-                          onPressed: _navigateToShowResults,
-                          child: Text('Go to Results Page'),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        Text(_result!),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: analyzeImage,
-                          child: Text('Analyze Image'),
-                        ),
-                      ],
-                    ),
+                ElevatedButton(
+                  onPressed: analyzeImage,
+                  child: Text('Analyze Image'),
+                ),
               ],
             ],
           ),
